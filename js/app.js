@@ -6,7 +6,8 @@ const state = {
   brush: WALL,
   tool: 'brush',
   rooms: {},
-  act: { title: 'Акт', next: '', tileset: 'prison', boss: '', columns: 4, rows: 3, places: [] },
+  act: { title: 'Акт', next: '', tileset: 'prison', music: '', ambient: '', boss: '',
+    columns: 4, rows: 3, cellWidth: 16, cellHeight: 12, places: [] },
   drag: null,
 };
 
@@ -33,21 +34,31 @@ function save() {
 }
 
 function restore() {
+  let kept = null;
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return;
+    if (raw) kept = JSON.parse(raw);
+  } catch (error) { return; }
 
-    const kept = JSON.parse(raw);
+  if (!kept) return;
+
+  try {
     if (kept.room) {
       state.room = parseRoom(kept.room, kept.roomName || 'room');
       state.room.name = kept.roomName || state.room.name;
     }
-    Object.keys(kept.rooms || {}).forEach((name) => {
+  } catch (error) { /* одна испорченная комната не должна прятать библиотеку */ }
+
+  Object.keys(kept.rooms || {}).forEach((name) => {
+    try {
       state.rooms[name] = parseRoom(kept.rooms[name], name);
       state.rooms[name].name = name;
-    });
+    } catch (error) { /* пропускаем только эту комнату */ }
+  });
+
+  try {
     if (kept.act) state.act = Object.assign(state.act, kept.act);
-  } catch (error) { /* испорченное хранилище не должно ломать редактор */ }
+  } catch (error) { /* акт не обязателен */ }
 }
 
 function actPlaces() {
@@ -59,14 +70,21 @@ function actPlaces() {
 
 function actGrid() {
   const places = actPlaces();
-  let width = 16;
-  let height = 12;
-  places.forEach((place) => {
+  const width = state.act.cellWidth;
+  const height = state.act.cellHeight;
+
+  let right = 0;
+  let bottom = 0;
+  places.forEach((place, index) => {
     const room = place && state.rooms[place.room];
-    if (room) { width = room.grid.width; height = room.grid.height; }
+    if (!room) return;
+    const column = index % state.act.columns;
+    const row = Math.floor(index / state.act.columns);
+    right = Math.max(right, column * width + room.grid.width);
+    bottom = Math.max(bottom, row * height + room.grid.height);
   });
 
-  const grid = new Grid(state.act.columns * width, state.act.rows * height, () => EMPTY);
+  const grid = new Grid(Math.max(1, right), Math.max(1, bottom), () => EMPTY);
   const boxes = [];
 
   places.forEach((place, index) => {
@@ -103,11 +121,12 @@ let lastSize = 16;
 function draw() {
   const isRoom = state.mode === 'room';
   const scene = isRoom ? { grid: state.room.grid, boxes: null } : actGrid();
-  const tileset = isRoom ? state.room.tileset : state.act.tileset;
+  const tileset = (isRoom ? state.room.tileset : state.act.tileset) || DEFAULT_TILESET;
 
   lastIssues = isRoom
     ? checkRoom(scene.grid)
-    : checkMap(scene.grid).concat(checkSeams(actPlaces(), state.rooms, state.act.columns));
+    : checkMap(scene.grid, { hasNext: !!state.act.next })
+      .concat(checkSeams(actPlaces(), state.rooms, state.act.columns, state.act.cellWidth, state.act.cellHeight));
 
   lastGrid = scene.grid;
   lastSize = cellSize(scene.grid);
@@ -147,27 +166,46 @@ function showChecks() {
     li.className = list[0].hard ? 'bad' : '';
     const where = list[0].column < 0 ? '' : ' ' + list[0].column + ';' + list[0].row
       + (list.length > 1 ? ' и ещё ' + (list.length - 1) : '');
-    li.innerHTML = text + '<span class="where">' + where + '</span>';
+    li.textContent = text;
+    if (where) {
+      const note = document.createElement('span');
+      note.className = 'where';
+      note.textContent = where;
+      li.appendChild(note);
+    }
     checksList.appendChild(li);
   });
 }
 
+let lastOutput = '';
+
 function showOutput() {
   document.getElementById('outputHead').textContent = state.mode === 'room' ? 'Файл комнаты' : 'Файл акта';
+
+  let text;
   try {
-    output.value = state.mode === 'room'
+    text = state.mode === 'room'
       ? roomToText(state.room)
       : actToText({
         title: state.act.title,
         next: state.act.next,
         tileset: state.act.tileset,
+        music: state.act.music,
+        ambient: state.act.ambient,
         boss: state.act.boss,
         columns: state.act.columns,
+        cellWidth: state.act.cellWidth,
+        cellHeight: state.act.cellHeight,
         places: actPlaces(),
       }, state.rooms);
   } catch (error) {
-    output.value = '; ' + error.message;
+    text = '; ' + error.message;
   }
+
+  if (output.value && output.value !== lastOutput) return;
+
+  output.value = text;
+  lastOutput = text;
 }
 
 function paint(column, row, spec) {
@@ -198,8 +236,8 @@ function paint(column, row, spec) {
 
 function cellAt(event) {
   const box = view.getBoundingClientRect();
-  const column = Math.floor((event.clientX - box.left) / lastSize);
-  const row = Math.floor((event.clientY - box.top) / lastSize);
+  const column = Math.floor((event.clientX - box.left - view.clientLeft) / lastSize);
+  const row = Math.floor((event.clientY - box.top - view.clientTop) / lastSize);
   return [column, row];
 }
 
@@ -210,7 +248,8 @@ view.addEventListener('mousedown', (event) => {
   if (!lastGrid || !lastGrid.inside(column, row)) return;
 
   if (state.mode === 'map') {
-    const index = Math.floor(row / actGrid().height) * state.act.columns + Math.floor(column / actGrid().width);
+    const index = Math.floor(row / state.act.cellHeight) * state.act.columns
+      + Math.floor(column / state.act.cellWidth);
     if (index < 0 || index >= actPlaces().length) return;
 
     const pick = document.getElementById('mapRoomPick').value;
@@ -285,7 +324,7 @@ function swatchPreview(spec) {
     canvas.height = 20;
     const context = canvas.getContext('2d');
     context.imageSmoothingEnabled = false;
-    const sheet = IMAGES['tiles:' + state.room.tileset];
+    const sheet = IMAGES['tiles:' + (state.room.tileset || DEFAULT_TILESET)];
     if (spec.k === 'empty' || !sheet) {
       context.fillStyle = spec.k === 'empty' ? '#0e1013' : '#4a4740';
       context.fillRect(0, 0, 20, 20);
@@ -426,7 +465,7 @@ function syncMode() {
   document.getElementById('roomWidth').value = state.room.grid.width;
   document.getElementById('roomHeight').value = state.room.grid.height;
   document.getElementById('roomName').value = state.room.name;
-  tilesetPick.value = isRoom ? state.room.tileset : state.act.tileset;
+  tilesetPick.value = (isRoom ? state.room.tileset : state.act.tileset) || DEFAULT_TILESET;
 }
 
 function wire() {
@@ -483,10 +522,12 @@ function wire() {
     draw();
   });
 
-  ['mapCols', 'mapRows'].forEach((id) => {
+  ['mapCols', 'mapRows', 'mapCellWidth', 'mapCellHeight'].forEach((id) => {
     document.getElementById(id).addEventListener('change', () => {
       state.act.columns = Math.max(1, Math.min(12, parseInt(document.getElementById('mapCols').value, 10) || 4));
       state.act.rows = Math.max(1, Math.min(12, parseInt(document.getElementById('mapRows').value, 10) || 3));
+      state.act.cellWidth = Math.max(3, Math.min(64, parseInt(document.getElementById('mapCellWidth').value, 10) || 16));
+      state.act.cellHeight = Math.max(3, Math.min(64, parseInt(document.getElementById('mapCellHeight').value, 10) || 12));
       actPlaces();
       save();
       draw();
@@ -553,6 +594,7 @@ function wire() {
           else {
             const room = parseRoom(text, name);
             room.name = name;
+            room.path = 'Resources/Rooms/' + file.name;
             state.rooms[name] = room;
           }
         } catch (error) { /* один битый файл не должен ронять загрузку остальных */ }
@@ -580,12 +622,26 @@ function applyAct(act) {
   state.act.tileset = act.tileset || state.act.tileset;
   state.act.boss = act.boss || '';
 
-  let width = 16;
-  let height = 12;
+  let width = 0;
+  let height = 0;
   act.rooms.forEach((placement) => {
-    const room = state.rooms[placement.id] || state.rooms[fileStem(act.library[placement.id])];
-    if (room) { width = room.grid.width; height = room.grid.height; }
+    if (placement.column > 0) width = width ? Math.min(width, placement.column) : placement.column;
+    if (placement.row > 0) height = height ? Math.min(height, placement.row) : placement.row;
   });
+
+  if (!width || !height) {
+    act.rooms.forEach((placement) => {
+      const room = state.rooms[placement.id] || state.rooms[fileStem(act.library[placement.id])];
+      if (!room) return;
+      if (!width) width = room.grid.width;
+      if (!height) height = room.grid.height;
+    });
+  }
+
+  width = width || 16;
+  height = height || 12;
+  state.act.cellWidth = width;
+  state.act.cellHeight = height;
 
   let columns = 1;
   let rows = 1;
@@ -598,16 +654,33 @@ function applyAct(act) {
   state.act.rows = rows;
   state.act.places = new Array(columns * rows).fill(null);
 
+  const missing = [];
+  const clashes = [];
+
   act.rooms.forEach((placement) => {
     const name = state.rooms[placement.id] ? placement.id : fileStem(act.library[placement.id]);
-    if (!state.rooms[name]) return;
+    if (!state.rooms[name]) { missing.push(placement.id); return; }
+
+    const offGrid = placement.column % width !== 0 || placement.row % height !== 0;
     const index = Math.floor(placement.row / height) * columns + Math.floor(placement.column / width);
-    if (index >= 0 && index < state.act.places.length) state.act.places[index] = { room: name };
+    if (index < 0 || index >= state.act.places.length) { clashes.push(placement.id); return; }
+    if (offGrid || state.act.places[index]) { clashes.push(placement.id); return; }
+
+    state.act.places[index] = { room: name, quarters: placement.quarters, isMirrored: placement.isMirrored };
   });
 
   document.getElementById('mapCols').value = columns;
   document.getElementById('mapRows').value = rows;
+  document.getElementById('mapCellWidth').value = width;
+  document.getElementById('mapCellHeight').value = height;
   state.mode = 'map';
+
+  if (missing.length || clashes.length) {
+    const parts = [];
+    if (missing.length) parts.push('нет в библиотеке: ' + missing.join(', '));
+    if (clashes.length) parts.push('не легли в сетку: ' + clashes.join(', '));
+    alert('Часть комнат не разложилась - ' + parts.join('; '));
+  }
 }
 
 function fileStem(path) {

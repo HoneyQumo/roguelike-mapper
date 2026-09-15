@@ -74,7 +74,7 @@ function checkRoom(grid) {
     const sorted = regions.slice().sort((a, b) => b.length - a.length);
     sorted.slice(1).forEach((region) => {
       region.forEach(([column, row]) => {
-        issues.push({ text: 'кусок отрезан от остального', column, row, hard: true });
+        issues.push({ text: 'кусок не связан внутри комнаты - может соединяться через соседа', column, row, hard: false });
       });
     });
   }
@@ -95,8 +95,9 @@ function checkRoom(grid) {
   return issues;
 }
 
-function checkMap(grid) {
+function checkMap(grid, options) {
   const issues = [];
+  const hasNext = !!(options && options.hasNext);
 
   const entrances = cellsOfKind(grid, 'entrance');
   const spawns = cellsOfKind(grid, 'spawn');
@@ -163,7 +164,14 @@ function checkMap(grid) {
   }
 
   const exits = cellsOfKind(grid, 'exit');
-  if (!exits.length) issues.push({ text: 'нет выхода', column: -1, row: -1, hard: false });
+  if (!exits.length) {
+    issues.push({
+      text: hasNext ? 'локация ведёт дальше, но выхода нет' : 'нет выхода',
+      column: -1,
+      row: -1,
+      hard: hasNext,
+    });
+  }
   exits.forEach(([column, row]) => {
     if (!reached.at(column, row)) issues.push({ text: 'до выхода не дойти', column, row, hard: true });
   });
@@ -171,8 +179,10 @@ function checkMap(grid) {
   return issues.concat(checkRoom(grid).filter((issue) => issue.text.startsWith('нет такого')));
 }
 
-function checkSeams(places, rooms, columns) {
+function checkSeams(places, rooms, columns, cellWidth, cellHeight) {
   const issues = [];
+  const width = cellWidth;
+  const height = cellHeight;
 
   places.forEach((place, index) => {
     if (!place) return;
@@ -181,14 +191,21 @@ function checkSeams(places, rooms, columns) {
 
     const column = index % columns;
     const row = Math.floor(index / columns);
-    const width = room.grid.width;
-    const height = room.grid.height;
+
+    if (room.grid.width > width || room.grid.height > height) {
+      issues.push({
+        text: place.room + ' больше клетки сетки - выйдет за свои границы',
+        column: column * width,
+        row: row * height,
+        hard: true,
+      });
+    }
 
     const rightIndex = column + 1 < columns ? index + 1 : -1;
     const right = rightIndex >= 0 ? places[rightIndex] : null;
     if (right && rooms[right.room]) {
       const other = rooms[right.room];
-      for (let line = 0; line < Math.min(height, other.grid.height); line++) {
+      for (let line = 0; line < height; line++) {
         const mine = isWalkableSpec(room.grid.at(width - 1, line));
         const theirs = isWalkableSpec(other.grid.at(0, line));
         if (mine !== theirs) {
@@ -206,7 +223,7 @@ function checkSeams(places, rooms, columns) {
     const below = belowIndex < places.length ? places[belowIndex] : null;
     if (below && rooms[below.room]) {
       const other = rooms[below.room];
-      for (let line = 0; line < Math.min(width, other.grid.width); line++) {
+      for (let line = 0; line < width; line++) {
         const mine = isWalkableSpec(room.grid.at(line, height - 1));
         const theirs = isWalkableSpec(other.grid.at(line, 0));
         if (mine !== theirs) {

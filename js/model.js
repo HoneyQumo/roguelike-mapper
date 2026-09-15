@@ -10,6 +10,8 @@ const WALL = { k: 'wall' };
 const FLOOR = { k: 'floor' };
 const EMPTY = { k: 'empty' };
 
+const DEFAULT_TILESET = 'ruins';
+
 const FIXED_SYMBOLS = {
   wall: '#',
   floor: '.',
@@ -41,7 +43,12 @@ const SYMBOL_POOL = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVW
 
 function keyOf(spec) {
   if (!spec) return 'empty';
-  return spec.k + (spec.id ? ':' + spec.id : '');
+  const step = spec.n === undefined || spec.n === null ? '' : '#' + spec.n;
+  return spec.k + (spec.id ? ':' + spec.id : '') + step;
+}
+
+function isStopSpec(spec) {
+  return !!spec && (spec.k === 'patrol' || spec.k === 'watch');
 }
 
 function sameSpec(a, b) {
@@ -141,7 +148,7 @@ function blankRoom(width, height, name) {
     return isBorder ? WALL : FLOOR;
   });
 
-  return { name: name || 'room', kind: '', tileset: 'prison', grid, symbols: {} };
+  return { name: name || 'room', info: {}, kind: '', tileset: 'prison', grid, symbols: {}, stops: 0 };
 }
 
 const PROP_BY_ID = {};
