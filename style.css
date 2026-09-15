@@ -50,6 +50,7 @@ button, select, input[type="text"], input[type="number"], input:not([type]) {
 
 button { cursor: pointer; }
 button:hover { border-color: #49505e; }
+button:disabled { opacity: 0.4; cursor: default; }
 button.on, .tab.on { background: var(--accent); color: #241a08; border-color: var(--accent); }
 
 .field { display: inline-flex; align-items: center; gap: 5px; color: var(--dim); }

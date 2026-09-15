@@ -11,6 +11,53 @@ const state = {
   drag: null,
 };
 
+const HISTORY_LIMIT = 60;
+
+const history = { past: [], future: [] };
+
+function snapshot() {
+  return { grid: state.room.grid.clone(), name: state.room.name, tileset: state.room.tileset };
+}
+
+function remember() {
+  history.past.push(snapshot());
+  if (history.past.length > HISTORY_LIMIT) history.past.shift();
+  history.future.length = 0;
+  showHistory();
+}
+
+function apply(kept) {
+  state.room.grid = kept.grid.clone();
+  state.room.name = kept.name;
+  state.room.tileset = kept.tileset;
+  syncMode();
+}
+
+function undo() {
+  if (!history.past.length) return;
+  history.future.push(snapshot());
+  apply(history.past.pop());
+  showHistory();
+  save();
+  draw();
+}
+
+function redo() {
+  if (!history.future.length) return;
+  history.past.push(snapshot());
+  apply(history.future.pop());
+  showHistory();
+  save();
+  draw();
+}
+
+function showHistory() {
+  const back = document.getElementById('undo');
+  const forward = document.getElementById('redo');
+  if (back) back.disabled = !history.past.length;
+  if (forward) forward.disabled = !history.future.length;
+}
+
 const view = document.getElementById('view');
 const output = document.getElementById('output');
 const checksList = document.getElementById('checks');
@@ -260,6 +307,8 @@ view.addEventListener('mousedown', (event) => {
   }
 
   const spec = event.button === 2 ? FLOOR : state.brush;
+  if (state.tool !== 'pick') remember();
+
   if (state.tool === 'rect') {
     state.drag = { from: [column, row], spec, before: state.room.grid.clone() };
   } else {
@@ -495,6 +544,7 @@ function wire() {
   });
 
   const resize = () => {
+    remember();
     const width = Math.max(3, Math.min(64, parseInt(document.getElementById('roomWidth').value, 10) || 16));
     const height = Math.max(3, Math.min(64, parseInt(document.getElementById('roomHeight').value, 10) || 12));
     state.room.grid.resize(width, height);
@@ -509,7 +559,22 @@ function wire() {
     save();
   });
 
+  document.getElementById('undo').addEventListener('click', undo);
+  document.getElementById('redo').addEventListener('click', redo);
+
+  window.addEventListener('keydown', (event) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    const key = event.key.toLowerCase();
+    if (key !== 'z' && key !== 'y') return;
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+
+    event.preventDefault();
+    if (key === 'y' || event.shiftKey) redo();
+    else undo();
+  });
+
   document.getElementById('roomNew').addEventListener('click', () => {
+    remember();
     state.room = blankRoom(state.room.grid.width, state.room.grid.height, state.room.name);
     save();
     draw();
@@ -548,6 +613,7 @@ function wire() {
   document.getElementById('load').addEventListener('click', () => {
     try {
       if (state.mode === 'room') {
+        remember();
         state.room = parseRoom(output.value, state.room.name);
         state.room.name = document.getElementById('roomName').value.trim() || state.room.name;
       } else {
@@ -695,5 +761,6 @@ loadImages(() => {
   buildPalette();
   refreshLibrary();
   syncMode();
+  showHistory();
   draw();
 });

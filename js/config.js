@@ -190,8 +190,7 @@ function roomToText(room) {
     for (let column = 0; column < room.grid.width; column++) {
       line += symbols.get(keyOf(room.grid.at(column, row) || EMPTY));
     }
-    const trimmed = line.replace(/ +$/, '');
-    map.push(trimmed || ' ');
+    map.push(line);
   }
 
   const info = Object.assign({}, room.info || {});
