@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roguelike Mapper</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Roguelike Mapper</h1>
+  <nav class="tabs">
+    <button id="tabRoom" class="tab on">Комната</button>
+    <button id="tabMap" class="tab">Карта</button>
+  </nav>
+  <div class="grow"></div>
+  <label class="field">Набор
+    <select id="tileset"></select>
+  </label>
+  <label class="check"><input type="checkbox" id="showGrid" checked> сетка</label>
+  <label class="check"><input type="checkbox" id="showSeams" checked> границы комнат</label>
+</header>
+
+<main>
+
+  <section id="palettePane" class="pane">
+    <div class="paneHead">Палитра</div>
+    <div id="palette"></div>
+    <div class="paneHead">Своё имя</div>
+    <div class="row">
+      <input id="customId" placeholder="door_cell / lane / zone_a">
+      <button id="addDoor">Дверь</button>
+      <button id="addPatrol">Патруль</button>
+      <button id="addWatch">Пост</button>
+      <button id="addZone">Зона</button>
+    </div>
+  </section>
+
+  <section id="canvasPane" class="pane">
+    <div class="toolbar">
+      <div id="roomTools">
+        <span class="tools">
+          <button class="tool on" data-tool="brush">Кисть</button>
+          <button class="tool" data-tool="rect">Прямоугольник</button>
+          <button class="tool" data-tool="fill">Заливка</button>
+          <button class="tool" data-tool="pick">Пипетка</button>
+        </span>
+        <label class="field">Ш <input id="roomWidth" type="number" min="3" max="64" value="16"></label>
+        <label class="field">В <input id="roomHeight" type="number" min="3" max="64" value="12"></label>
+        <label class="field">Имя <input id="roomName" value="room"></label>
+        <button id="roomNew">Очистить</button>
+        <button id="roomSave">В библиотеку</button>
+      </div>
+      <div id="mapTools" class="hidden">
+        <label class="field">Комната
+          <select id="mapRoomPick"></select>
+        </label>
+        <span class="hint">клик - положить, правый клик - убрать</span>
+        <label class="field">Столбцов <input id="mapCols" type="number" min="1" max="12" value="4"></label>
+        <label class="field">Строк <input id="mapRows" type="number" min="1" max="12" value="3"></label>
+      </div>
+      <div class="grow"></div>
+      <span id="cursor" class="hint"></span>
+    </div>
+    <div class="canvasWrap">
+      <canvas id="view" width="900" height="600"></canvas>
+    </div>
+  </section>
+
+  <section id="sidePane" class="pane">
+    <div class="paneHead">Проверки</div>
+    <ul id="checks" class="checks"></ul>
+
+    <div class="paneHead">Библиотека комнат</div>
+    <div class="row">
+      <input type="file" id="loadFiles" multiple accept=".config,.txt">
+      <button id="clearLibrary">Очистить</button>
+    </div>
+    <ul id="library" class="library"></ul>
+
+    <div class="paneHead" id="outputHead">Файл комнаты</div>
+    <textarea id="output" spellcheck="false"></textarea>
+    <div class="row">
+      <button id="copy">Копировать</button>
+      <button id="load">Загрузить из поля</button>
+      <button id="download">Скачать</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="data/assets.js"></script>
+<script src="js/model.js"></script>
+<script src="js/config.js"></script>
+<script src="js/render.js"></script>
+<script src="js/checks.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
