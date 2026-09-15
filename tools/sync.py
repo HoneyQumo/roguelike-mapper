@@ -68,6 +68,7 @@ def Props(game):
             'health': float(Field(block, 'health', '0')),
             'solid': Field(block, 'solid', 'true') == 'true',
             'cover': Field(block, 'cover', 'false') == 'true',
+            'openable': bool(Field(block, 'key')) or Field(block, 'openable', 'false') == 'true',
             'atlas': os.path.basename(frame[0]) if frame else '',
             'frame': [int(v) for v in frame[1:5]] if len(frame) >= 5 else None,
             'spent': [int(v) for v in spent[1:5]] if len(spent) >= 5 else None,

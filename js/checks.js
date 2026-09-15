@@ -4,7 +4,8 @@ function regionsOf(grid) {
 
   for (let row = 0; row < grid.height; row++) {
     for (let column = 0; column < grid.width; column++) {
-      if (seen.at(column, row) || !isWalkableSpec(grid.at(column, row))) continue;
+      const here = grid.at(column, row);
+      if (seen.at(column, row) || !isWalkableSpec(here) || isSealedSpec(here)) continue;
 
       const cells = [];
       const wave = [[column, row]];
@@ -18,7 +19,7 @@ function regionsOf(grid) {
           const nc = c + dc;
           const nr = r + dr;
           if (!grid.inside(nc, nr) || seen.at(nc, nr)) return;
-          if (!isWalkableSpec(grid.at(nc, nr))) return;
+          if (!isWalkableSpec(grid.at(nc, nr)) || isSealedSpec(grid.at(nc, nr))) return;
           seen.set(nc, nr, 1);
           wave.push([nc, nr]);
         });
@@ -29,6 +30,12 @@ function regionsOf(grid) {
   }
 
   return regions;
+}
+
+function isSealedSpec(spec) {
+  if (!spec || spec.k !== 'prop') return false;
+  const prop = PROP_BY_ID[spec.id];
+  return !!prop && prop.solid && prop.health <= 0 && !prop.openable;
 }
 
 function walk(grid, start, opened) {
@@ -44,7 +51,7 @@ function walk(grid, start, opened) {
       if (!grid.inside(nc, nr) || seen.at(nc, nr)) return;
 
       const spec = grid.at(nc, nr);
-      if (!isWalkableSpec(spec)) return;
+      if (!isWalkableSpec(spec) || isSealedSpec(spec)) return;
       if (isGateSpec(spec) && !opened.has(spec.id)) return;
 
       seen.set(nc, nr, 1);
@@ -158,7 +165,7 @@ function checkMap(grid, options) {
   for (let row = 0; row < grid.height; row++) {
     for (let column = 0; column < grid.width; column++) {
       const spec = grid.at(column, row);
-      if (!isWalkableSpec(spec) || isGateSpec(spec)) continue;
+      if (!isWalkableSpec(spec) || isGateSpec(spec) || isSealedSpec(spec)) continue;
       if (!reached.at(column, row)) issues.push({ text: 'сюда не дойти', column, row, hard: true });
     }
   }

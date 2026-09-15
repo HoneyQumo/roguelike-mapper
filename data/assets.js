@@ -18,6 +18,7 @@ window.MAPPER_DATA = {
    "health": 40.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     0,
@@ -44,6 +45,7 @@ window.MAPPER_DATA = {
    "health": 55.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     448,
@@ -70,6 +72,7 @@ window.MAPPER_DATA = {
    "health": 30.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     576,
@@ -96,6 +99,7 @@ window.MAPPER_DATA = {
    "health": 25.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     128,
@@ -122,6 +126,7 @@ window.MAPPER_DATA = {
    "health": 30.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     320,
@@ -148,6 +153,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": false,
+   "openable": true,
    "atlas": "props.png",
    "frame": [
     192,
@@ -174,6 +180,7 @@ window.MAPPER_DATA = {
    "health": 60.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props.png",
    "frame": [
     768,
@@ -200,6 +207,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     0,
@@ -221,6 +229,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     64,
@@ -242,6 +251,7 @@ window.MAPPER_DATA = {
    "health": 30.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     128,
@@ -268,6 +278,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": true,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     256,
@@ -289,6 +300,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": false,
    "cover": true,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     320,
@@ -310,6 +322,7 @@ window.MAPPER_DATA = {
    "health": 20.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     384,
@@ -336,6 +349,7 @@ window.MAPPER_DATA = {
    "health": 35.0,
    "solid": true,
    "cover": true,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     512,
@@ -362,6 +376,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     640,
@@ -383,6 +398,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": true,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     704,
@@ -404,6 +420,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": true,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     768,
@@ -425,6 +442,7 @@ window.MAPPER_DATA = {
    "health": 0.0,
    "solid": false,
    "cover": false,
+   "openable": false,
    "atlas": "props_act1.png",
    "frame": [
     832,
